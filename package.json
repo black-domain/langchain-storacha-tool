@@ -1,0 +1,43 @@
+{
+  "name": "lang-chain-demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ipld/car": "^5.4.0",
+    "@langchain/community": "^0.3.37",
+    "@langchain/core": "^0.3.43",
+    "@langchain/openai": "^0.4.9",
+    "@tailwindcss/vite": "^4.1.0",
+    "@ucanto/core": "^10.3.0",
+    "@ucanto/principal": "^9.0.2",
+    "@web3-storage/w3up-client": "^17.2.0",
+    "axios": "^1.8.4",
+    "cheerio": "^1.0.0",
+    "langchain": "^0.3.19",
+    "multiformats": "^13.3.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^4.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.2.0"
+  }
+}
