@@ -1,16 +1,15 @@
-# Storacha AI - IPFS Chat Interface
+# LangChain Storacha Tool
 
-![Storacha AI Interface](./public/screenshot.png)
+![LangChain Storacha Tool](./public/screenshot.png)
 
 ## Description
 
-A conversational UI for interacting with IPFS storage, featuring file uploads and natural language search.
+The LangChain Storacha tool enables agents to interact with a distributed storage network, allowing for file uploads and retrieval.
 
 ## ✨ Features
 
 - **Chat-style interface** for intuitive interactions
 - **File uploads** with preview capabilities
-- **Natural language search** across stored content
 - **Smart content display**:
     - 📷 Image previews
     - 📝 Text/JSON rendering
