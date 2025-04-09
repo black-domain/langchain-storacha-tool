@@ -76,7 +76,7 @@ export async function upload(message: string) {
             }
         }
 
-        const output= thoughtLink ? `The thought link is ${thoughtLink}. \nThe file link is ${result.output}.` : `The file link is ${result.output}.`;
+        const output= thoughtLink ? `The thought chain link is ${thoughtLink}. \nThe file link is ${result.output}.` : `The file link is ${result.output}.`;
         try {
             const parsed = JSON.parse(output);
             if (parsed.url) {
