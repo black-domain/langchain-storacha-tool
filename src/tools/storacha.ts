@@ -1,7 +1,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
 import { StorachaUpload, StorachaRetrieve } from "../storacha";
-import {extractThought} from "../storacha/utils.ts";
+import { extractThought } from "../storacha/utils.ts";
 
 // Initialize language model
 const model = new ChatOpenAI({
@@ -10,48 +10,56 @@ const model = new ChatOpenAI({
     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
     configuration: {
         baseURL: import.meta.env.VITE_OPENAI_API_URL
-    }
-});
-
-let actionCompleted = false;
-
-const customHandler = {
-    async handleAgentAction(action: any) {
-        if (action.tool === 'storacha_upload') {
-            const thought = extractThought(action.log);
+    },
+    callbacks: [{
+        async handleLLMEnd(output: any) {
+            const thought = extractThought(output.generations[0][0].text);
             const thoughtBlob = new Blob([thought], { type: 'text/plain' });
             const thoughtFile = new File([thoughtBlob], 'thought.txt');
-
             const uploadTool = new StorachaUpload();
             const thoughtResult = await uploadTool._call({
                 attachment: {
-                    url: URL.createObjectURL(thoughtFile),
+                    blobURL: URL.createObjectURL(thoughtFile),
                     title: 'Agent Thought',
                     contentType: 'text/plain'
                 }
             });
-
-            action.metadata = JSON.parse(thoughtResult);
+            thoughtLink = JSON.parse(thoughtResult).url;
             actionCompleted = true;
-        }
-    },
-};
+        },
+    }],
+});
 
 // Initialize agent executor
 const tools = [new StorachaUpload(), new StorachaRetrieve()];
-const agent = await initializeAgentExecutorWithOptions(tools, model, {
-    agentType: "structured-chat-zero-shot-react-description",
-    verbose: true,
-    returnIntermediateSteps: true,
-    callbacks: [customHandler],
-    agentArgs: {
-        prefix: 'Result must contain url'
-    }
-});
+let agent : any;
+let actionCompleted = false;
+let thoughtLink = "";
+const thoughtOutputStr = "The thought chain link for this session:";
 
-// Run agent
+async function initializeAgent() {
+    // Initialize agent executor with fresh context for each upload
+    agent = await initializeAgentExecutorWithOptions(tools, model, {
+        agentType: "structured-chat-zero-shot-react-description",
+        verbose: true,
+        returnIntermediateSteps: true,
+        agentArgs: {
+            prefix: 'Result must contain url'
+        }
+    });
+}
+
 export async function upload(message: string) {
     try {
+        // Reset flags and thoughtLink before each upload
+        actionCompleted = false;
+        thoughtLink = "";
+
+        // Ensure agent is initialized for the new upload
+        if (!agent) {
+            await initializeAgent();
+        }
+
         const result = await agent.invoke({
             input: message
         });
@@ -65,18 +73,7 @@ export async function upload(message: string) {
             }, 100);
         });
 
-        let thoughtLink = '';
-
-        if (result.intermediateSteps) {
-            for (const step of result.intermediateSteps) {
-                if (step.action.tool === 'storacha_upload' && step.action.metadata) {
-                    thoughtLink = step.action.metadata.url;
-                    break;
-                }
-            }
-        }
-
-        const output= thoughtLink ? `The thought chain link is ${thoughtLink}. \nThe file link is ${result.output}.` : `The file link is ${result.output}.`;
+        const output = `${thoughtOutputStr} ${thoughtLink}. \nThe file link is ${result.output}`;
         try {
             const parsed = JSON.parse(output);
             if (parsed.url) {
@@ -93,9 +90,22 @@ export async function upload(message: string) {
 
 export async function retrieve(message: string) {
     try {
-        const result = await agent.invoke({ input: message});
-        return result.output;
+        // Ensure agent is initialized for the new upload
+        if (!agent) {
+            await initializeAgent();
+        }
+        const result = await agent.invoke({ input: message });
+        await new Promise<void>((resolve) => {
+            const checkInterval = setInterval(() => {
+                if (actionCompleted) {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 100);
+        });
+        return `${thoughtOutputStr} ${thoughtLink}. \n${result.output}`;
     } catch (error) {
         console.error('Run agent error:', error);
+        return 'Run agent error';
     }
 }

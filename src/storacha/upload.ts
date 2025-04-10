@@ -10,7 +10,7 @@ export class StorachaUpload extends StorachaBaseTool {
 
     schema = z.object({
         attachment: z.object({
-            url: z.string(),
+            blobURL: z.string(),
             title: z.string(),
             contentType: z.string(),
         }),
@@ -21,7 +21,7 @@ export class StorachaUpload extends StorachaBaseTool {
     }
 
     private async prepareFiles(attachment: z.infer<typeof this.schema>["attachment"]) {
-        const response = await fetch(attachment.url);
+        const response = await fetch(attachment.blobURL);
         const fileContent = await response.arrayBuffer();
         const blob = new Blob([new Uint8Array(fileContent)], { type: attachment.contentType });
         return new File([blob], attachment.title, { type: attachment.contentType });
@@ -34,7 +34,7 @@ export class StorachaUpload extends StorachaBaseTool {
             cid: "",
         };
 
-        if (!attachment?.url) {
+        if (!attachment?.blobURL) {
             return JSON.stringify({
                 ...baseResponse,
                 status: "error",
@@ -84,7 +84,7 @@ export class StorachaUpload extends StorachaBaseTool {
 }
 
 export type UploadSchema = {
-    url: string;
+    blobURL: string;
     title: string;
     contentType: string;
 };

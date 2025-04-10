@@ -4,17 +4,21 @@ import { importDAG } from '@ucanto/core/delegation';
 
 export const defaultGatewayUrl = import.meta.VITE_GATEWAY_URL;
 
+export const checkCID = (message: string) => {
+    const cidPattern = /(Qm[a-zA-Z0-9]{44}|b[a-zA-Z0-9]{1,})/g;
+    return message.match(cidPattern);
+}
+
 export const getCIDsFromMessage = (message: string) => {
-    if (!message) {
+    if (!message.length) {
         return [];
     }
 
     // Patterns for potential CIDs:
     // - v0 CIDs start with Qm and are 46 characters in base58
     // - v1 CIDs commonly start with b for various base encodings (often bafy, bafk, etc.)
-    const cidPattern = /(Qm[a-zA-Z0-9]{44}|b[a-zA-Z0-9]{1,})/g;
-    const matches = message.match(cidPattern);
     const cids: string[] = [];
+    const matches = checkCID(message)
 
     if (matches) {
         for (const match of matches) {

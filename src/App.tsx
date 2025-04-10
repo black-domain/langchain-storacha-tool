@@ -1,6 +1,6 @@
 import React, {useState, useRef, useEffect} from "react";
 import {upload, retrieve} from "./tools/storacha.ts";
-import {fetchIPFSData, getCIDsFromMessage} from "./storacha/utils.ts";
+import {checkCID, fetchIPFSData, getCIDsFromMessage} from "./storacha/utils.ts";
 import './App.css';
 
 type Message = {
@@ -14,6 +14,7 @@ type Message = {
 };
 
 const App = () => {
+    const thoughtOutputStr = "The thought chain link for this session:";
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
@@ -69,51 +70,60 @@ const App = () => {
                 response = await upload(`upload this file: ${fileUrl}`);
             } else {
                 response = await retrieve(inputValue);
-                const cids = getCIDsFromMessage(response);
-                if (cids.length > 0) {
-                    const url = `${import.meta.env.VITE_GATEWAY_URL}/ipfs/${cids[0]}`;
-                    const data = await fetchIPFSData(url);
+                const matches = checkCID(inputValue);
+                if (matches && matches.length > 0) {
+                    const cids = getCIDsFromMessage(response);
+                    if (cids.length > 0) {
+                        const thoughtUrl = `${import.meta.env.VITE_GATEWAY_URL}/ipfs/${cids[0]}`;
+                        const url = `${import.meta.env.VITE_GATEWAY_URL}/ipfs/${cids[1]}`;
+                        const data = await fetchIPFSData(url);
 
-                    let content: React.ReactNode;
-                    if (typeof data === 'object' && !(data instanceof Blob)) {
-                        content = (
-                            <div className="overflow-hidden">
-                                <pre className="bg-gray-700 p-3 rounded-lg overflow-x-auto text-sm">
-                                  {JSON.stringify(data, null, 2)}
-                                </pre>
-                            </div>
-                        );
-                    } else if (typeof data === 'string') {
-                        content = <div className="whitespace-pre-wrap text-sm break-words">{data}</div>;
-                    } else if (data instanceof Blob) {
-                        if (data.type.startsWith('image/')) {
-                            const objectUrl = URL.createObjectURL(data);
-                            content = <img src={objectUrl} alt="IPFS Image"
-                                           className="max-w-full h-auto rounded-lg max-h-80"/>;
-                        } else {
-                            const objectUrl = URL.createObjectURL(data);
+                        let content: React.ReactNode;
+                        if (typeof data === 'object' && !(data instanceof Blob)) {
                             content = (
-                                <a
-                                    href={objectUrl}
-                                    download="file"
-                                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                    </svg>
-                                    Download File
-                                </a>
+                                <div className="overflow-hidden">
+                                    <div className="whitespace-pre-wrap text-sm break-words">{thoughtOutputStr} {thoughtUrl}</div>
+                                    <pre className="bg-gray-700 p-3 rounded-lg overflow-x-auto text-sm">
+                                      {JSON.stringify(data, null, 2)}
+                                    </pre>
+                                </div>
                             );
-                        }
-                    }
+                        } else if (typeof data === 'string') {
+                            content = <><div className="whitespace-pre-wrap text-sm break-words">{thoughtOutputStr} {thoughtUrl}</div><div className="whitespace-pre-wrap text-sm break-words">{data}</div></>;
+                        } else if (data instanceof Blob) {
+                            if (data.type.startsWith('image/')) {
+                                const objectUrl = URL.createObjectURL(data);
+                                content = <><div className="whitespace-pre-wrap text-sm break-words">{thoughtOutputStr} {thoughtUrl}</div><img src={objectUrl} alt="IPFS Image"
+                                                 className="max-w-full h-auto rounded-lg max-h-80"/></>;
+                            } else {
+                                const objectUrl = URL.createObjectURL(data);
+                                content = (
+                                    <>
+                                        <div className="whitespace-pre-wrap text-sm break-words">{thoughtOutputStr} {thoughtUrl}</div>
+                                        <a
+                                            href={objectUrl}
+                                            download="file"
+                                            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            </svg>
+                                            Download File
+                                        </a>
+                                    </>
 
-                    setMessages(prev => prev.map(msg =>
-                        msg.id === loadingMessageId
-                            ? {...msg, content, loading: false}
-                            : msg
-                    ));
-                    return;
+                                );
+                            }
+                        }
+
+                        setMessages(prev => prev.map(msg =>
+                            msg.id === loadingMessageId
+                                ? {...msg, content, loading: false}
+                                : msg
+                        ));
+                        return;
+                    }
                 }
             }
 
